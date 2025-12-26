@@ -1,0 +1,297 @@
+# Kyverno Policy - Enforce Security Context Best Practices
+# Validates and mutates pods to enforce least-privilege security settings
+#
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-security-context
+  annotations:
+    policies.kyverno.io/title: Require Security Context
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Enforces security context best practices including running as non-root,
+      read-only root filesystem, no privilege escalation, and dropping all capabilities.
+      Aligns with CIS Kubernetes Benchmark and NIST 800-190.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    # Rule 1: Require runAsNonRoot at pod level
+    - name: require-run-as-non-root-pod
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Pod must run as non-root user. Set spec.securityContext.runAsNonRoot=true
+          and specify runAsUser (CIS 5.2.5, NIST 800-190 4.4.1)
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - =(securityContext):
+                  =(runAsNonRoot): true
+            =(initContainers):
+              - =(securityContext):
+                  =(runAsNonRoot): true
+            containers:
+              - =(securityContext):
+                  =(runAsNonRoot): true
+            =(securityContext):
+              =(runAsNonRoot): true
+    
+    # Rule 2: Require allowPrivilegeEscalation=false
+    - name: require-no-privilege-escalation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Containers must set allowPrivilegeEscalation=false to prevent gaining
+          additional privileges via setuid binaries (CIS 5.2.1)
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - securityContext:
+                  allowPrivilegeEscalation: false
+            =(initContainers):
+              - securityContext:
+                  allowPrivilegeEscalation: false
+            containers:
+              - securityContext:
+                  allowPrivilegeEscalation: false
+    
+    # Rule 3: Require dropping ALL capabilities
+    - name: require-drop-all-capabilities
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Containers must drop all capabilities for least privilege.
+          Set securityContext.capabilities.drop=[ALL] (CIS 5.2.6, 5.2.9)
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - securityContext:
+                  capabilities:
+                    drop:
+                      - ALL
+            =(initContainers):
+              - securityContext:
+                  capabilities:
+                    drop:
+                      - ALL
+            containers:
+              - securityContext:
+                  capabilities:
+                    drop:
+                      - ALL
+    
+    # Rule 4: Recommend readOnlyRootFilesystem (Audit mode)
+    - name: recommend-read-only-root-filesystem
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        validationFailureAction: Audit  # Warn but don't block
+        message: >-
+          Containers should use read-only root filesystem for immutability.
+          Set securityContext.readOnlyRootFilesystem=true and mount emptyDir
+          volumes for writable directories (NIST 800-190 4.4.2)
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - securityContext:
+                  readOnlyRootFilesystem: true
+            =(initContainers):
+              - securityContext:
+                  readOnlyRootFilesystem: true
+            containers:
+              - securityContext:
+                  readOnlyRootFilesystem: true
+    
+    # Rule 5: Require seccomp profile
+    - name: require-seccomp-profile
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Pod must specify seccomp profile (RuntimeDefault or Localhost).
+          Set spec.securityContext.seccompProfile.type (CIS 5.7.2)
+        pattern:
+          spec:
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault | Localhost
+    
+    # Rule 6: Disallow privileged containers
+    - name: disallow-privileged
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Privileged containers are forbidden. Remove securityContext.privileged=true
+          (CIS 5.2.1)
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - =(securityContext):
+                  =(privileged): false
+            =(initContainers):
+              - =(securityContext):
+                  =(privileged): false
+            containers:
+              - =(securityContext):
+                  =(privileged): false
+    
+    # Rule 7: Disallow hostPath volumes
+    - name: disallow-host-path
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          HostPath volumes are forbidden as they expose host filesystem.
+          Use PersistentVolumeClaims or emptyDir instead (CIS 5.2.4)
+        pattern:
+          spec:
+            =(volumes):
+              - X(hostPath): "null"
+    
+    # Rule 8: Disallow hostNetwork
+    - name: disallow-host-network
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Sharing the host network namespace is forbidden.
+          Remove spec.hostNetwork=true (CIS 5.2.2)
+        pattern:
+          spec:
+            =(hostNetwork): false
+    
+    # Rule 9: Disallow hostPID and hostIPC
+    - name: disallow-host-namespaces
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          Sharing host PID or IPC namespaces is forbidden.
+          Remove spec.hostPID and spec.hostIPC (CIS 5.2.3)
+        pattern:
+          spec:
+            =(hostPID): false
+            =(hostIPC): false
+---
+# Kyverno Policy - Require Resource Limits
+# Ensures all containers have CPU/memory requests and limits
+#
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require Resource Limits
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Requires all containers to specify resource requests and limits
+      to prevent resource exhaustion and ensure fair scheduling.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-cpu-memory-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: >-
+          All containers must specify resource requests and limits for CPU and memory.
+          This ensures predictable scheduling and prevents resource exhaustion.
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    memory: "?*"
+                    cpu: "?*"
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"

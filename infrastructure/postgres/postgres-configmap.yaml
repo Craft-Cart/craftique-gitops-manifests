@@ -3,6 +3,17 @@ kind: ConfigMap
 metadata:
   name: postgres-config
   namespace: default
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: kubectl
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+    craftique.io/data-classification: internal
+  annotations:
+    craftique.io/description: "PostgreSQL configuration parameters"
 data:
   POSTGRES_DB: craftique
   POSTGRES_USER: craftique

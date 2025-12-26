@@ -3,6 +3,17 @@ kind: Service
 metadata:
   name: backend-service
   namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-backend
+    craftique.io/public-facing: "true"
+  annotations:
+    craftique.io/description: "Backend API service endpoint"
 spec:
   selector:
     app: craftique-backend

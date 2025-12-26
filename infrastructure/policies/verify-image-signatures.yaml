@@ -1,0 +1,78 @@
+# Kyverno ClusterPolicy: Verify Image Signatures
+# This policy ensures only signed container images can be deployed
+#
+# Prerequisites:
+# 1. Install Kyverno: helm install kyverno kyverno/kyverno -n kyverno --create-namespace
+# 2. Images must be signed with cosign keyless (Sigstore)
+#
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/title: Verify Image Signatures
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Verifies that container images are signed using cosign keyless signing
+      with GitHub Actions OIDC. This ensures only images built by our CI/CD
+      pipeline can be deployed to the cluster.
+spec:
+  validationFailureAction: Enforce  # Block unsigned images (use 'Audit' for testing)
+  background: true
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+  rules:
+    - name: verify-craftique-backend-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - default
+                - production
+                - staging
+      verifyImages:
+        - imageReferences:
+            # GCP Artifact Registry pattern: REGION-docker.pkg.dev/PROJECT/REPO/IMAGE
+            - "*-docker.pkg.dev/*/craftique/backend*"
+            - "*-docker.pkg.dev/*/*/backend*"
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/*/.github/workflows/*"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev
+          mutateDigest: true  # Replace tags with digests
+          verifyDigest: true  # Ensure digest matches
+
+    - name: verify-craftique-frontend-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - default
+                - production
+                - staging
+      verifyImages:
+        - imageReferences:
+            # GCP Artifact Registry pattern: REGION-docker.pkg.dev/PROJECT/REPO/IMAGE
+            - "*-docker.pkg.dev/*/craftique/frontend*"
+            - "*-docker.pkg.dev/*/*/frontend*"
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/*/.github/workflows/*"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev
+          mutateDigest: true
+          verifyDigest: true
+                      url: https://rekor.sigstore.dev
+          mutateDigest: true
+          verifyDigest: true

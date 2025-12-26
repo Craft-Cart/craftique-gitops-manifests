@@ -1,0 +1,241 @@
+# Craftique Backend Helm Chart - Default Values
+# Security-hardened configuration with sensible defaults
+
+## Application Configuration
+nameOverride: ""
+fullnameOverride: ""
+
+## Image Configuration
+image:
+  # GCP Artifact Registry - must use digest pinning (not tags)
+  repository: us-central1-docker.pkg.dev/craftique-project/craftique/backend
+  # DO NOT use tags like :latest - must use @sha256:DIGEST
+  # Example: us-central1-docker.pkg.dev/craftique-project/craftique/backend@sha256:abc123...
+  tag: "@sha256:PLACEHOLDER_UPDATED_BY_CICD"
+  pullPolicy: IfNotPresent
+  # Pull secrets for private registry (if needed)
+  pullSecrets: []
+
+## Replica Configuration
+replicaCount: 2
+
+## Update Strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0  # Zero-downtime deployments
+
+## Security Context (Pod-level)
+podSecurityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+## Security Context (Container-level)
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - NET_BIND_SERVICE  # Only if binding to privileged ports
+
+## Service Configuration
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+  annotations: {}
+
+## Resource Limits
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "300m"
+
+## Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+## Health Checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+## Environment Variables
+env:
+  PORT: "8000"
+  NODE_ENV: production
+  # Add non-sensitive environment variables here
+  # Secrets should be referenced via secretRef
+
+## External Secrets Configuration
+externalSecrets:
+  enabled: true
+  # Database credentials secret
+  databaseSecret:
+    name: craftique-database-credentials
+    keys:
+      - DATABASE_URL
+  # Application secrets
+  appSecret:
+    name: craftique-backend-secrets
+    keys:
+      - JWT_SECRET
+      - COOKIE_SECRET
+      - AUTH0_CLIENT_SECRET
+      - PAYMOB_API_KEY
+      - PAYMOB_HMAC_SECRET
+
+## Volume Mounts (for read-only root filesystem)
+volumes:
+  tmp:
+    enabled: true
+  cache:
+    enabled: true
+    path: /app/.cache
+
+## Labels (Kubernetes Recommended Labels)
+labels:
+  app.kubernetes.io/name: craftique
+  app.kubernetes.io/component: backend
+  app.kubernetes.io/part-of: craftique-ecommerce
+  app.kubernetes.io/managed-by: helm
+
+## Governance Labels
+governanceLabels:
+  craftique.io/owner: platform-team
+  craftique.io/environment: production
+  craftique.io/cost-center: eng-backend
+  craftique.io/criticality: critical
+  craftique.io/data-classification: internal
+  craftique.io/compliance: pci-dss
+  craftique.io/backup-policy: daily
+  craftique.io/monitoring: enabled
+  craftique.io/public-facing: "true"
+
+## Annotations
+annotations:
+  supply-chain.craftique.io/signed: "true"
+  supply-chain.craftique.io/signing-method: "cosign-keyless"
+  supply-chain.craftique.io/provenance: "slsa-github-actions"
+  craftique.io/description: "Backend REST API service for Craftique e-commerce platform"
+
+## Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+## Network Policy
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: craftique-frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow database
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow HTTPS to external APIs
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+
+## Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+## Node Selector
+nodeSelector: {}
+
+## Tolerations
+tolerations: []
+
+## Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - craftique
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                  - backend
+          topologyKey: kubernetes.io/hostname
+
+## Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: false  # Requires Prometheus Operator
+    interval: 30s
+    path: /metrics

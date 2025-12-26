@@ -1,0 +1,257 @@
+# Allow DNS Resolution - Required for Service Discovery
+# Permits all pods to query kube-dns/CoreDNS for service resolution
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow DNS queries to kube-dns/CoreDNS for service discovery"
+spec:
+  podSelector: {}  # Applies to all pods
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS queries to kube-dns (UDP 53)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Allow Frontend to Backend Communication
+# Permits frontend pods to make HTTP requests to backend API
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow frontend pods to communicate with backend API on port 8000"
+spec:
+  podSelector:
+    matchLabels:
+      app: craftique-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: craftique-frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# Allow Ingress Controller to Frontend
+# Permits ingress-nginx to route traffic to frontend service
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-frontend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow ingress controller to route traffic to frontend on port 3000"
+spec:
+  podSelector:
+    matchLabels:
+      app: craftique-frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+# Allow Ingress Controller to Backend
+# Permits ingress-nginx to route API traffic to backend service
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow ingress controller to route API traffic to backend on port 8000"
+spec:
+  podSelector:
+    matchLabels:
+      app: craftique-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# Allow Backend External Egress
+# Permits backend to reach external APIs (Auth0, Paymob, etc.)
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-external-egress
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow backend to reach external APIs (Auth0, Paymob) on HTTPS"
+spec:
+  podSelector:
+    matchLabels:
+      app: craftique-backend
+  policyTypes:
+    - Egress
+  egress:
+    # Allow HTTPS to external APIs
+    - to:
+        - namespaceSelector: {}  # Any namespace
+      ports:
+        - protocol: TCP
+          port: 443  # HTTPS
+        - protocol: TCP
+          port: 80   # HTTP (for redirects)
+---
+# Allow Database Internal Communication
+# Permits PostgreSQL replication (if using replicas)
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-internal
+  namespace: default
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow PostgreSQL internal communication for replication"
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow postgres pods to communicate with each other
+    - from:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+  egress:
+    # Allow postgres pods to reach each other
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Allow Monitoring (Prometheus)
+# Permits Prometheus to scrape metrics from all pods
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Allow Prometheus to scrape metrics from application pods"
+spec:
+  podSelector:
+    matchLabels:
+      craftique.io/monitoring: enabled
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 8000  # Backend metrics endpoint
+        - protocol: TCP
+          port: 3000  # Frontend metrics endpoint

@@ -6,3 +6,4 @@ metadata:
 data:
   POSTGRES_DB: craftique
   POSTGRES_USER: craftique
+  PGDATA: /var/lib/postgresql/data/pgdata

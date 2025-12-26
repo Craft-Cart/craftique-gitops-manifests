@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: craftique-frontend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: craftique-frontend
+  template:
+    metadata:
+      labels:
+        app: craftique-frontend
+    spec:
+      securityContext:
+        runAsUser: 1001
+      containers:
+        - name: frontend
+          # TODO: Update with real image
+          image: craftique-frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_BASE_URL
+              value: "https://craftique.chickenkiller.com/api/v1"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"

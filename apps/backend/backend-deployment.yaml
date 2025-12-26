@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: craftique-backend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: craftique-backend
+  template:
+    metadata:
+      labels:
+        app: craftique-backend
+    spec:
+      # Security: Run as non-root user (matches Dockerfile)
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      
+      containers:
+        - name: backend
+          # TODO: Update with the real image path from Engineer 1/2
+          image: craftique-backend:latest 
+          ports:
+            - containerPort: 8000
+          env:
+            - name: PORT
+              value: "8000"
+            - name: DATABASE_URL
+              # Connects to the Service defined in infrastructure folder
+              value: "postgresql://craftique:craftique_temp_password@postgres-service:5432/craftique?schema=public"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10

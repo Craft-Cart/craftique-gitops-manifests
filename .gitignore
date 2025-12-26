@@ -1,0 +1,23 @@
+# Local environment files (NEVER commit these)
+.env
+*.env
+.env.local
+
+# Kubernetes specific
+kubeconfig
+*.kubeconfig
+certs/
+*.pem
+*.crt
+*.key
+
+# OS & IDE
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+
+# Helm & Temporary files
+*.log
+charts/*/charts/
+charts/*/tmp/

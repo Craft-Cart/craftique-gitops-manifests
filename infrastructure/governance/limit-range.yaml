@@ -1,0 +1,164 @@
+# LimitRange - Sets default resource limits for containers
+# Ensures all containers have resource constraints even if not explicitly set
+#
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: craftique-limit-range
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Default resource limits for containers in default namespace"
+spec:
+  limits:
+    # Container-level defaults
+    - type: Container
+      default:
+        # Default limits if not specified
+        cpu: "500m"
+        memory: "512Mi"
+        ephemeral-storage: "1Gi"
+      defaultRequest:
+        # Default requests if not specified
+        cpu: "100m"
+        memory: "128Mi"
+        ephemeral-storage: "500Mi"
+      max:
+        # Maximum allowed limits
+        cpu: "2"
+        memory: "4Gi"
+        ephemeral-storage: "10Gi"
+      min:
+        # Minimum required requests
+        cpu: "50m"
+        memory: "64Mi"
+        ephemeral-storage: "100Mi"
+      maxLimitRequestRatio:
+        # Max ratio between limit and request (prevents gaming the system)
+        cpu: "4"      # Limit can be max 4x the request
+        memory: "4"   # Limit can be max 4x the request
+    
+    # Pod-level limits (aggregate of all containers in a pod)
+    - type: Pod
+      max:
+        cpu: "4"
+        memory: "8Gi"
+        ephemeral-storage: "20Gi"
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+        ephemeral-storage: "100Mi"
+    
+    # PersistentVolumeClaim limits
+    - type: PersistentVolumeClaim
+      max:
+        storage: "50Gi"
+      min:
+        storage: "1Gi"
+---
+# LimitRange for Production namespace
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: craftique-limit-range-production
+  namespace: production
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/environment: production
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Production namespace resource limits with higher defaults"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "1"
+        memory: "1Gi"
+        ephemeral-storage: "2Gi"
+      defaultRequest:
+        cpu: "250m"
+        memory: "256Mi"
+        ephemeral-storage: "1Gi"
+      max:
+        cpu: "4"
+        memory: "8Gi"
+        ephemeral-storage: "20Gi"
+      min:
+        cpu: "100m"
+        memory: "128Mi"
+        ephemeral-storage: "500Mi"
+      maxLimitRequestRatio:
+        cpu: "4"
+        memory: "4"
+    - type: Pod
+      max:
+        cpu: "8"
+        memory: "16Gi"
+        ephemeral-storage: "40Gi"
+    - type: PersistentVolumeClaim
+      max:
+        storage: "100Gi"
+      min:
+        storage: "1Gi"
+---
+# LimitRange for Staging namespace
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: craftique-limit-range-staging
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/environment: staging
+    craftique.io/owner: platform-team
+    craftique.io/environment: staging
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Staging namespace resource limits with moderate defaults"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "750m"
+        memory: "768Mi"
+        ephemeral-storage: "1.5Gi"
+      defaultRequest:
+        cpu: "150m"
+        memory: "192Mi"
+        ephemeral-storage: "750Mi"
+      max:
+        cpu: "3"
+        memory: "6Gi"
+        ephemeral-storage: "15Gi"
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+        ephemeral-storage: "200Mi"
+      maxLimitRequestRatio:
+        cpu: "4"
+        memory: "4"
+    - type: Pod
+      max:
+        cpu: "6"
+        memory: "12Gi"
+        ephemeral-storage: "30Gi"
+    - type: PersistentVolumeClaim
+      max:
+        storage: "75Gi"
+      min:
+        storage: "1Gi"

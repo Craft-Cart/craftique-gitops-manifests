@@ -1,0 +1,23 @@
+apiVersion: v2
+name: craftique-frontend
+description: Secure Helm chart for Craftique Frontend Next.js application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - craftique
+  - frontend
+  - nextjs
+  - ecommerce
+  - security
+home: https://github.com/Craft-Cart/Craftique
+sources:
+  - https://github.com/Craft-Cart/Craftique
+maintainers:
+  - name: Platform Team
+    email: platform-team@craftique.io
+icon: https://craftique.io/logo.png
+annotations:
+  craftique.io/security-hardened: "true"
+  craftique.io/signed-images: "true"
+  craftique.io/supply-chain-verified: "true"

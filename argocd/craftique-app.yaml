@@ -3,6 +3,17 @@ kind: Application
 metadata:
   name: craftique-platform
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: gitops
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "ArgoCD application managing Craftique platform deployment"
+    craftique.io/repository: "https://github.com/Craft-Cart/craftique-gitops-manifests.git"
 spec:
   project: default
   source:

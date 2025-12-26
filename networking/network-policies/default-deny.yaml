@@ -1,0 +1,95 @@
+# Default-Deny Network Policy - Baseline Security
+# Blocks all ingress and egress traffic by default
+# Specific allow policies must be created for legitimate traffic
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Default-deny network policy blocking all ingress/egress traffic"
+spec:
+  podSelector: {}  # Applies to all pods in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  # Empty ingress/egress rules = deny all
+---
+# Default-Deny Ingress Only (Alternative - Less Restrictive)
+# Blocks all incoming traffic but allows all outgoing
+# Use this if you need pods to reach external services without explicit policies
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Default-deny ingress policy (alternative to full deny-all)"
+spec:
+  podSelector: {}  # Applies to all pods
+  policyTypes:
+    - Ingress
+  # No ingress rules = deny all ingress
+---
+# Default-Deny for Production Namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: production
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Default-deny network policy for production namespace"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Default-Deny for Staging Namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: staging
+    craftique.io/cost-center: eng-platform
+    craftique.io/auto-shutdown: enabled
+  annotations:
+    craftique.io/description: "Default-deny network policy for staging namespace"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

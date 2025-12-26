@@ -3,6 +3,16 @@ kind: NetworkPolicy
 metadata:
   name: allow-backend-to-db
   namespace: default
+  labels:
+    app.kubernetes.io/name: craftique
+    app.kubernetes.io/component: network-security
+    app.kubernetes.io/part-of: craftique-ecommerce
+    app.kubernetes.io/managed-by: argocd
+    craftique.io/owner: platform-team
+    craftique.io/environment: production
+    craftique.io/cost-center: eng-platform
+  annotations:
+    craftique.io/description: "Network policy allowing backend pods to communicate with PostgreSQL database"
 spec:
   podSelector:
     matchLabels:

@@ -35,7 +35,7 @@ spec:
       #   --docker-password="$(cat key.json)" \
       #   --docker-email=user@example.com
       imagePullSecrets:
-        - name: gcr-json-key
+        - name: gcp-pull-secret
       
       # Security: Run as non-root user (matches Dockerfile)
       securityContext:

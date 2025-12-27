@@ -28,12 +28,24 @@ spec:
         environment: production
         owner: secdevops-team
     spec:
+      # Image pull secret for GCP Artifact Registry authentication
+      # Create with: kubectl create secret docker-registry gcr-json-key \
+      #   --docker-server=us-central1-docker.pkg.dev \
+      #   --docker-username=_json_key \
+      #   --docker-password="$(cat key.json)" \
+      #   --docker-email=user@example.com
+      imagePullSecrets:
+        - name: gcp-pull-secret
+      
       securityContext:
         runAsUser: 1001
       containers:
         - name: frontend
-          # TODO: Update with real image
-          image: craftique-frontend:latest
+          # GCP Artifact Registry image path
+          # Format: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/IMAGE:TAG
+          # Update ARTIFACT_REPO_NAME with your actual repository name from GCP
+          image: europe-west10-docker.pkg.dev/craftique-482022/craftique-registry/frontend:latest
+          imagePullPolicy: Always
           # Container-level security context
           securityContext:
             readOnlyRootFilesystem: true

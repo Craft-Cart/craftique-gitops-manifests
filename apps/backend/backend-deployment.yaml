@@ -87,6 +87,136 @@ spec:
             # Secure: DATABASE_URL built from environment variables
             - name: DATABASE_URL
               value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)?schema=public"
+            # ConfigMap values
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: NODE_ENV
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: API_BASE_URL
+            - name: BCRYPT_ROUNDS
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: BCRYPT_ROUNDS
+            - name: RATE_LIMIT_WINDOW_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: RATE_LIMIT_WINDOW_MS
+            - name: RATE_LIMIT_MAX_REQUESTS
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: RATE_LIMIT_MAX_REQUESTS
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: FRONTEND_URL
+            # JWT Configuration
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: JWT_SECRET
+            - name: JWT_EXPIRES_IN
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: JWT_EXPIRES_IN
+            - name: JWT_REFRESH_EXPIRES_IN
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: JWT_REFRESH_EXPIRES_IN
+            # Cookie Configuration
+            - name: COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: COOKIE_SECRET
+            - name: COOKIE_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: COOKIE_DOMAIN
+            - name: COOKIE_SECURE
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: COOKIE_SECURE
+            - name: COOKIE_SAME_SITE
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: COOKIE_SAME_SITE
+            # Paymob Configuration
+            - name: PAYMOB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: PAYMOB_API_KEY
+            - name: PAYMOB_INTEGRATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: PAYMOB_INTEGRATION_ID
+            - name: PAYMOB_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: PAYMOB_HMAC_SECRET
+            - name: PAYMOB_CALLBACK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: PAYMOB_CALLBACK_URL
+            # SendGrid Configuration
+            - name: SENDGRID_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: SENDGRID_API_KEY
+            - name: SENDGRID_FROM_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: SENDGRID_FROM_EMAIL
+            - name: AUTH0_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: auth0-credentials
+                  key: AUTH0_DOMAIN
+            - name: AUTH0_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: auth0-credentials
+                  key: AUTH0_CLIENT_ID
+            - name: AUTH0_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth0-credentials
+                  key: AUTH0_CLIENT_SECRET
+            - name: AUTH0_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth0-credentials
+                  key: AUTH0_SECRET
+            - name: AUTH0_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: auth0-credentials
+                  key: AUTH0_AUDIENCE
+            - name: AUTH0_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: auth0-credentials
+                  key: AUTH0_ISSUER
           resources:
             requests:
               memory: "128Mi"

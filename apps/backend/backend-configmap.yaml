@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: default
+data:
+  NODE_ENV: production
+  API_BASE_URL: https://craftique.chickenkiller.com/api/v1
+  BCRYPT_ROUNDS: "12"
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  FRONTEND_URL: https://craftique.chickenkiller.com
+  JWT_EXPIRES_IN: 24h
+  JWT_REFRESH_EXPIRES_IN: 30d
+  COOKIE_DOMAIN: craftique.chickenkiller.com
+  COOKIE_SECURE: "true"
+  COOKIE_SAME_SITE: strict
+  PAYMOB_CALLBACK_URL: https://craftique.chickenkiller.com/api/v1/payments/paymob/callback
+  SENDGRID_FROM_EMAIL: noreply@yourstore.com

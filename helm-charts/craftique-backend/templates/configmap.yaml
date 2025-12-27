@@ -4,7 +4,7 @@ metadata:
   name: {{ include "craftique-backend.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "craftique-backend.labels" . | indent 4 }}
+    {{- include "craftique-backend.labels" . | nindent 4 }}
 data:
   # Add non-sensitive configuration here
   PORT: {{ .Values.env.PORT | quote }}

@@ -3,36 +3,6 @@ kind: Deployment
 metadata:
   name: craftique-frontend
   namespace: default
-  labels:
-    # Standard Kubernetes labels
-    app.kubernetes.io/name: craftique
-    app.kubernetes.io/component: frontend
-    app.kubernetes.io/part-of: craftique-ecommerce
-    app.kubernetes.io/managed-by: argocd
-    app.kubernetes.io/version: "1.0.0"
-    app.kubernetes.io/instance: craftique-default
-    
-    # Governance labels
-    craftique.io/owner: platform-team
-    craftique.io/environment: production
-    craftique.io/cost-center: eng-frontend
-    craftique.io/criticality: critical
-    craftique.io/data-classification: public
-    
-    # Operational labels
-    craftique.io/backup-policy: never
-    craftique.io/monitoring: enabled
-    craftique.io/public-facing: "true"
-  annotations:
-    # Supply Chain Security annotations
-    supply-chain.craftique.io/signed: "true"
-    supply-chain.craftique.io/signing-method: "cosign-keyless"
-    supply-chain.craftique.io/provenance: "slsa-github-actions"
-    
-    # Operational annotations
-    craftique.io/description: "Frontend Next.js web application for Craftique e-commerce platform"
-    craftique.io/repository: "https://github.com/Craft-Cart/Craftique"
-    craftique.io/contact: "frontend-team@craftique.io"
 spec:
   replicas: 2
   selector:
@@ -42,46 +12,15 @@ spec:
     metadata:
       labels:
         app: craftique-frontend
-        app.kubernetes.io/name: craftique
-        app.kubernetes.io/component: frontend
-        app.kubernetes.io/part-of: craftique-ecommerce
-        app.kubernetes.io/version: "1.0.0"
-        craftique.io/owner: platform-team
-        craftique.io/environment: production
-        craftique.io/cost-center: eng-frontend
     spec:
-      # Security: Run as non-root user (matches Dockerfile)
       securityContext:
         runAsUser: 1001
-        runAsGroup: 1001
-        fsGroup: 1001
-        runAsNonRoot: true        # Enforce non-root execution
-        seccompProfile:
-          type: RuntimeDefault    # Use runtime default seccomp profile
-      
       containers:
         - name: frontend
-          # Image is automatically updated by CI/CD pipeline with signed digest
-          # Format: REGION-docker.pkg.dev/PROJECT_ID/REPO/IMAGE@sha256:DIGEST
-          # DO NOT use :latest tags - they will be rejected by Kyverno policies
-          image: us-central1-docker.pkg.dev/craftique-project/craftique/frontend@sha256:PLACEHOLDER_UPDATED_BY_CICD
-          imagePullPolicy: IfNotPresent
+          # TODO: Update with real image
+          image: craftique-frontend:latest
           ports:
             - containerPort: 3000
-          # Container-level security context
-          securityContext:
-            allowPrivilegeEscalation: false  # Prevent gaining more privileges
-            readOnlyRootFilesystem: true     # Immutable root filesystem
-            runAsNonRoot: true               # Enforce non-root user
-            capabilities:
-              drop:
-                - ALL                        # Drop all capabilities
-          # Volume mounts for writable directories (Next.js needs cache and tmp)
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-            - name: nextjs-cache
-              mountPath: /app/.next/cache
           env:
             - name: NEXT_PUBLIC_API_BASE_URL
               value: "https://craftique.chickenkiller.com/api/v1"
@@ -89,25 +28,3 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "100m"
-            limits:
-              memory: "256Mi"
-              cpu: "300m"
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 3000
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 3000
-            initialDelaySeconds: 10
-            periodSeconds: 5
-      
-      # Volumes for writable directories (readOnlyRootFilesystem requires this)
-      volumes:
-        - name: tmp
-          emptyDir: {}
-        - name: nextjs-cache
-          emptyDir: {}

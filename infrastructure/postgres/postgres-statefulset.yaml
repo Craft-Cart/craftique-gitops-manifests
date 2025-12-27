@@ -3,30 +3,6 @@ kind: StatefulSet
 metadata:
   name: postgres
   namespace: default
-  labels:
-    # Standard Kubernetes labels
-    app.kubernetes.io/name: postgres
-    app.kubernetes.io/component: database
-    app.kubernetes.io/part-of: craftique-ecommerce
-    app.kubernetes.io/managed-by: argocd
-    app.kubernetes.io/version: "15"
-    app.kubernetes.io/instance: postgres-default
-    
-    # Governance labels
-    craftique.io/owner: platform-team
-    craftique.io/environment: production
-    craftique.io/cost-center: eng-platform
-    craftique.io/criticality: critical
-    craftique.io/data-classification: confidential
-    craftique.io/compliance: pci-dss
-    
-    # Operational labels
-    craftique.io/backup-policy: daily
-    craftique.io/monitoring: enabled
-    craftique.io/public-facing: "false"
-  annotations:
-    craftique.io/description: "PostgreSQL database for Craftique application data"
-    craftique.io/sla: "99.9% uptime, RPO 24h, RTO 4h"
 spec:
   serviceName: "postgres-service"
   replicas: 1
@@ -37,87 +13,26 @@ spec:
     metadata:
       labels:
         app: postgres
-        app.kubernetes.io/name: postgres
-        app.kubernetes.io/component: database
-        app.kubernetes.io/part-of: craftique-ecommerce
-        app.kubernetes.io/version: "15"
-        craftique.io/owner: platform-team
-        craftique.io/environment: production
-        craftique.io/cost-center: eng-platform
-        craftique.io/data-classification: confidential
     spec:
-      # Security: PostgreSQL runs as postgres user (UID 999 in official image)
-      securityContext:
-        runAsUser: 999           # postgres user in official image
-        runAsGroup: 999
-        fsGroup: 999
-        runAsNonRoot: true       # Enforce non-root execution
-        seccompProfile:
-          type: RuntimeDefault   # Use runtime default seccomp profile
-      
       containers:
         - name: postgres
           image: postgres:15-alpine
           ports:
             - containerPort: 5432
               name: postgres
-          # Container-level security context
-          securityContext:
-            allowPrivilegeEscalation: false  # Prevent privilege escalation
-            readOnlyRootFilesystem: false    # PostgreSQL needs writable /var/run/postgresql
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL                        # Drop all capabilities
           envFrom:
             - configMapRef:
                 name: postgres-config
           env:
-            # Managed by External Secrets Operator - pulls from GCP Secret Manager
+            # TODO: Engineer 4 will replace this with ExternalSecret reference later
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: craftique-database-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: craftique-database-credentials
-                  key: POSTGRES_USER 
+              value: "craftique_temp_password" 
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
-            - name: postgres-run
-              mountPath: /var/run/postgresql  # PostgreSQL socket directory
-            - name: tmp
-              mountPath: /tmp                 # Temp directory
           resources:
             requests:
               memory: "256Mi"
-          livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - pg_isready -U ${POSTGRES_USER}
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - pg_isready -U ${POSTGRES_USER}
-            initialDelaySeconds: 5
-            periodSeconds: 5
-      
-      # Volumes for writable directories
-      volumes:
-        - name: postgres-run
-          emptyDir: {}
-        - name: tmp
-          emptyDir: {}
-  
               cpu: "250m"
             limits:
               memory: "512Mi"
@@ -125,15 +40,6 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: postgres-data
-        labels:
-          app.kubernetes.io/name: postgres
-          app.kubernetes.io/component: database
-          app.kubernetes.io/part-of: craftique-ecommerce
-          craftique.io/owner: platform-team
-          craftique.io/environment: production
-          craftique.io/cost-center: eng-platform
-          craftique.io/backup-policy: daily
-          craftique.io/data-classification: confidential
       spec:
         accessModes: [ "ReadWriteOnce" ]
         storageClassName: "standard-rwo"

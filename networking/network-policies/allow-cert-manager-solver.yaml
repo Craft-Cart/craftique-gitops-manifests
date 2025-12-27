@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cert-manager-solver
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
+spec:
+  podSelector:
+    matchLabels:
+      acme.cert-manager.io/http01-solver: "true"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from ingress controller for HTTP-01 challenge
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8089
+    # Allow from anywhere (for Let's Encrypt validation servers)
+    - ports:
+        - protocol: TCP
+          port: 8089
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow outbound HTTPS to Let's Encrypt
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443

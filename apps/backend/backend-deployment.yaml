@@ -28,15 +28,6 @@ spec:
         environment: production
         owner: secdevops-team
     spec:
-      # Image pull secret for GCP Artifact Registry authentication
-      # Create with: kubectl create secret docker-registry gcr-json-key \
-      #   --docker-server=us-central1-docker.pkg.dev \
-      #   --docker-username=_json_key \
-      #   --docker-password="$(cat key.json)" \
-      #   --docker-email=user@example.com
-      imagePullSecrets:
-        - name: gcp-pull-secret
-      
       # Security: Run as non-root user (matches Dockerfile)
       securityContext:
         runAsUser: 1001
@@ -45,11 +36,8 @@ spec:
       
       containers:
         - name: backend
-          # GCP Artifact Registry image path
-          # Format: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/IMAGE:TAG
-          # Update ARTIFACT_REPO_NAME with your actual repository name from GCP
-          image: europe-west10-docker.pkg.dev/craftique-482022/craftique-registry/backend:latest
-          imagePullPolicy: Always
+          # TODO: Update with the real image path from Engineer 1/2
+          image: craftique-backend:latest 
           # Container-level security context
           securityContext:
             readOnlyRootFilesystem: true
@@ -68,24 +56,25 @@ spec:
           env:
             - name: PORT
               value: "8000"
-            # Secure: DATABASE_URL built from secrets synced from GCP Secret Manager
+            # Database credentials from ConfigMap and Secret
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+            # Secure: DATABASE_URL built from environment variables
             - name: DATABASE_URL
-              value: "postgresql://craftique:craftique_temp_password@postgres-service:5432/craftique?schema=public"
-            # - name: POSTGRES_USER
-            #   valueFrom:
-            #     secretKeyRef:
-            #       name: postgres-credentials
-            #       key: POSTGRES_USER
-            # - name: POSTGRES_PASSWORD
-            #   valueFrom:
-            #     secretKeyRef:
-            #       name: postgres-credentials
-            #       key: POSTGRES_PASSWORD
-            # - name: POSTGRES_DB
-            #   valueFrom:
-            #     secretKeyRef:
-            #       name: postgres-credentials
-            #       key: POSTGRES_DB
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)?schema=public"
           resources:
             requests:
               memory: "128Mi"

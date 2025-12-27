@@ -70,7 +70,7 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
+                  name: postgres-password-secret
                   key: POSTGRES_PASSWORD
             # Secure: DATABASE_URL built from environment variables
             - name: DATABASE_URL

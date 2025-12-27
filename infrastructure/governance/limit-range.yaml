@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: craftique-limits
+  namespace: default
+spec:
+  limits:
+    # Default limits for containers (if not specified)
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      max:
+        cpu: "1"
+        memory: "1Gi"
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+    
+    # Limits for pods
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: "2Gi"

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: craftique-quota
+  namespace: default
+spec:
+  hard:
+    # Limit total resources in namespace
+    requests.cpu: "2"
+    requests.memory: "2Gi"
+    limits.cpu: "4"
+    limits.memory: "4Gi"
+    
+    # Limit number of objects
+    pods: "10"
+    services: "5"
+    configmaps: "10"
+    persistentvolumeclaims: "3"
+    secrets: "10"

@@ -23,14 +23,42 @@ spec:
         - name: backend
           # TODO: Update with the real image path from Engineer 1/2
           image: craftique-backend:latest 
+          # Container-level security context
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /app/.next/cache
           env:
             - name: PORT
               value: "8000"
+            # Secure: DATABASE_URL built from secrets synced from GCP Secret Manager
             - name: DATABASE_URL
-              # Connects to the Service defined in infrastructure folder
-              value: "postgresql://craftique:craftique_temp_password@postgres-service:5432/craftique?schema=public"
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)?schema=public"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_DB
           resources:
             requests:
               memory: "128Mi"
@@ -44,3 +72,8 @@ spec:
               port: 8000
             initialDelaySeconds: 30
             periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}

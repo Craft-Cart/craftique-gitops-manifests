@@ -17,5 +17,5 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  # Use encrypted storage class for data at rest protection
-  storageClassName: pd-standard-encrypted
+  # standard-rwo provides encryption at rest by default (Google-managed keys)
+  storageClassName: standard-rwo

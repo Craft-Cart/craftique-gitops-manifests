@@ -73,8 +73,8 @@ spec:
           encryption: enabled
       spec:
         accessModes: [ "ReadWriteOnce" ]
-        # Use encrypted storage class
-        storageClassName: "pd-standard-encrypted"
+        # standard-rwo provides encryption at rest by default (Google-managed keys)
+        storageClassName: "standard-rwo"
         resources:
           requests:
             storage: 10Gi

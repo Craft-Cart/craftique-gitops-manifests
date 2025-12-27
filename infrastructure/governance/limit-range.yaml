@@ -3,6 +3,15 @@ kind: LimitRange
 metadata:
   name: craftique-limits
   namespace: default
+  labels:
+    app.kubernetes.io/name: limit-range
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   limits:
     # Default limits for containers (if not specified)

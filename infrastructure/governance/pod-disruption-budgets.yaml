@@ -3,6 +3,16 @@ kind: PodDisruptionBudget
 metadata:
   name: backend-pdb
   namespace: default
+  labels:
+    app: craftique-backend
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: availability
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   minAvailable: 1
   selector:
@@ -14,6 +24,16 @@ kind: PodDisruptionBudget
 metadata:
   name: frontend-pdb
   namespace: default
+  labels:
+    app: craftique-frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: availability
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   minAvailable: 1
   selector:

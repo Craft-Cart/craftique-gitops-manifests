@@ -3,6 +3,15 @@ kind: NetworkPolicy
 metadata:
   name: allow-backend-to-db
   namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   podSelector:
     matchLabels:

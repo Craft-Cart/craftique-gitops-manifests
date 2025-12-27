@@ -3,6 +3,11 @@
 *.env
 .env.local
 
+# GCP service account keys (CRITICAL - NEVER commit!)
+gcp-key.json
+**/gcp-key.json
+*.json
+
 # Kubernetes specific
 kubeconfig
 *.kubeconfig
@@ -10,6 +15,13 @@ certs/
 *.pem
 *.crt
 *.key
+
+# Secret backups and temporary files
+sealed-secrets-key.yaml
+/tmp/secret.yaml
+secret.yaml
+*-secret.yaml.tmp
+*-secrets-backup.yaml
 
 # OS & IDE
 .DS_Store

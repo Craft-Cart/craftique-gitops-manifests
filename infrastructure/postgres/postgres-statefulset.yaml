@@ -23,10 +23,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: postgres-config
-          env:
-            # TODO: Engineer 4 will replace this with ExternalSecret reference later
-            - name: POSTGRES_PASSWORD
-              value: "craftique_temp_password" 
+            # Secure: All sensitive credentials synced from GCP Secret Manager via ExternalSecret
+            - secretRef:
+                name: postgres-credentials 
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data

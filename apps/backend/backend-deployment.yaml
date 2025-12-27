@@ -58,22 +58,22 @@ spec:
               value: "8000"
             # Secure: DATABASE_URL built from secrets synced from GCP Secret Manager
             - name: DATABASE_URL
-              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)?schema=public"
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
+              value: "postgresql://craftique:craftique_temp_password@postgres-service:5432/craftique?schema=public"
+            # - name: POSTGRES_USER
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: postgres-credentials
+            #       key: POSTGRES_USER
+            # - name: POSTGRES_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: postgres-credentials
+            #       key: POSTGRES_PASSWORD
+            # - name: POSTGRES_DB
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: postgres-credentials
+            #       key: POSTGRES_DB
           resources:
             requests:
               memory: "128Mi"

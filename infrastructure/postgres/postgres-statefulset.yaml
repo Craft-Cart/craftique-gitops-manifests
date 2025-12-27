@@ -53,7 +53,7 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
+                  name: postgres-password-secret
                   key: POSTGRES_PASSWORD
           volumeMounts:
             - name: postgres-data

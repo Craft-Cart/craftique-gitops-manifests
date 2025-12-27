@@ -3,17 +3,6 @@ kind: Service
 metadata:
   name: frontend-service
   namespace: default
-  labels:
-    app.kubernetes.io/name: craftique
-    app.kubernetes.io/component: frontend
-    app.kubernetes.io/part-of: craftique-ecommerce
-    app.kubernetes.io/managed-by: argocd
-    craftique.io/owner: platform-team
-    craftique.io/environment: production
-    craftique.io/cost-center: eng-frontend
-    craftique.io/public-facing: "true"
-  annotations:
-    craftique.io/description: "Frontend web application service endpoint"
 spec:
   selector:
     app: craftique-frontend

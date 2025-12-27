@@ -117,8 +117,8 @@ Detailed file-by-file description
 ------
 
 Security notes and TODOs (actionable)
-- ✅ Secrets: **IMPLEMENTED** - External Secrets Operator integration with GCP Secret Manager. See `infrastructure/secrets/` for configuration. All secrets are pulled from cloud secret store and injected as K8s Secrets.
-- ✅ Supply Chain Security: **IMPLEMENTED** - Images are signed with cosign, include SLSA provenance attestations, and use digest pinning. Kyverno policies enforce signature verification. See `infrastructure/policies/` for admission control policies.
+- Secrets: The repository contains temporary plaintext credentials in `postgres-statefulset.yaml` (`POSTGRES_PASSWORD`) and `backend-deployment.yaml` (`DATABASE_URL` query string). Replace these with a secrets manager integration (ExternalSecrets Operator + cloud secrets store or Kubernetes Secrets encrypted with SealedSecrets/Vault).
+- Images: Both `backend` and `frontend` images are placeholders (`craftique-backend:latest`, `craftique-frontend:latest`). Update manifests to point to immutable image digests (`myregistry/myimage@sha256:...`) from CI build artifacts.
 - High availability: Postgres is configured as a single replica. Consider adding a managed cloud DB or a highly-available Postgres operator for production.
 - TLS: `ingress.yaml` disables SSL redirect; add TLS secrets/certificate and enable HTTPS in production.
 
@@ -138,7 +138,7 @@ Install with Argo CD (GitOps):
 
 Maintenance checklist for operators
 - Replace placeholder images with production image references.
-- ✅ ~~Remove plaintext passwords; integrate ExternalSecrets.~~ **DONE** - See `infrastructure/secrets/`
+- Remove plaintext passwords; integrate ExternalSecrets.
 - Enable TLS for the Ingress and change `ssl-redirect: true`.
 - Add resource limits/requests where missing and tune HPA if needed.
 - Add a README or comments inside empty folders such as `infrastructure/redis/` to document intended uses.

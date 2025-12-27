@@ -6,7 +6,7 @@ name: GitOps Security Pipeline
 
 on:
   push:
-    branches: [main, ci/pipelines]
+    branches: [main]
   pull_request:
     branches: [main]
 

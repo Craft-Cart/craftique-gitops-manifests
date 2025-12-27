@@ -3,6 +3,16 @@ kind: Deployment
 metadata:
   name: craftique-frontend
   namespace: default
+  labels:
+    app: craftique-frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   replicas: 2
   selector:
@@ -12,6 +22,11 @@ spec:
     metadata:
       labels:
         app: craftique-frontend
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: craftique
+        environment: production
+        owner: secdevops-team
     spec:
       securityContext:
         runAsUser: 1001

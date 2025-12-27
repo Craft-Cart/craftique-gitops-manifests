@@ -3,6 +3,16 @@ kind: StatefulSet
 metadata:
   name: postgres
   namespace: default
+  labels:
+    app: postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   serviceName: "postgres-service"
   replicas: 1
@@ -13,6 +23,11 @@ spec:
     metadata:
       labels:
         app: postgres
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: craftique
+        environment: production
+        owner: secdevops-team
     spec:
       # Pod-level security context - ensure postgres user (70) can access volumes
       securityContext:

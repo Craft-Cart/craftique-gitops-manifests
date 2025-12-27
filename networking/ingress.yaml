@@ -3,6 +3,15 @@ kind: Ingress
 metadata:
   name: craftique-ingress
   namespace: default
+  labels:
+    app.kubernetes.io/name: ingress
+    app.kubernetes.io/component: networking
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false" # Set to true once SSL is configured

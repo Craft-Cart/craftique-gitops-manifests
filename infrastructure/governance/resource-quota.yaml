@@ -3,6 +3,15 @@ kind: ResourceQuota
 metadata:
   name: craftique-quota
   namespace: default
+  labels:
+    app.kubernetes.io/name: resource-quota
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   hard:
     # Limit total resources in namespace

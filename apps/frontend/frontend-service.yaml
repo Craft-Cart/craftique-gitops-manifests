@@ -3,6 +3,16 @@ kind: Service
 metadata:
   name: frontend-service
   namespace: default
+  labels:
+    app: craftique-frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
 spec:
   selector:
     app: craftique-frontend

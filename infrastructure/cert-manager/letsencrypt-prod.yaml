@@ -15,7 +15,8 @@ spec:
   acme:
     # Let's Encrypt production server
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: secdevops-team@craftique.local
+    email: omar.samir.galal@gmail.com
+    profile: tlsserver
     # Secret to store ACME account private key
     privateKeySecretRef:
       name: letsencrypt-prod

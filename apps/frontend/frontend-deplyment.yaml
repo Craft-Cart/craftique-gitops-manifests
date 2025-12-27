@@ -62,8 +62,12 @@ spec:
           ports:
             - containerPort: 3000
           env:
+            # API_BASE_URL is used for server-side rendering (SSR) - internal cluster communication
+            - name: API_BASE_URL
+              value: "http://backend-service:8000/api/v1"
+            # NEXT_PUBLIC_API_BASE_URL is used for client-side - external domain
             - name: NEXT_PUBLIC_API_BASE_URL
-              value: "http://backend-service:8000"
+              value: "https://craftique.chickenkiller.com/api/v1"
           resources:
             requests:
               memory: "128Mi"

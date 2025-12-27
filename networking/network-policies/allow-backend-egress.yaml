@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-egress
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
+spec:
+  podSelector:
+    matchLabels:
+      app: craftique-backend
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow to postgres
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432

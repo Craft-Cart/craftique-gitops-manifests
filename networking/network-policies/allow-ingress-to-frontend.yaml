@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-frontend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: phd-craftique
+    cost-center: education
+spec:
+  podSelector:
+    matchLabels:
+      app: craftique-frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from ingress controller (typically in ingress-nginx namespace)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Also allow from all (for simplicity in free tier setup)
+    - ports:
+        - protocol: TCP
+          port: 3000

@@ -32,6 +32,11 @@ spec:
         - podSelector:
             matchLabels:
               app: craftique-backend
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
       ports:
         - protocol: TCP
           port: 8000

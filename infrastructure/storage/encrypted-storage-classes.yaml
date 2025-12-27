@@ -1,0 +1,74 @@
+# GKE Encrypted Storage Classes
+# These storage classes provide encryption at rest using Google-managed encryption keys
+
+---
+# Standard HDD with encryption (cost-effective for databases)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: pd-standard-encrypted
+  labels:
+    app.kubernetes.io/name: storage-class
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: craftique-482022
+    cost-center: education
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+  replication-type: none
+  # Google-managed encryption at rest (AES-256)
+  fstype: ext4
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+
+---
+# SSD with encryption (higher performance, higher cost)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: pd-ssd-encrypted
+  labels:
+    app.kubernetes.io/name: storage-class
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: craftique-482022
+    cost-center: education
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-ssd
+  replication-type: none
+  # Google-managed encryption at rest (AES-256)
+  fstype: ext4
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+
+---
+# Balanced SSD with encryption (recommended for production)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: pd-balanced-encrypted
+  labels:
+    app.kubernetes.io/name: storage-class
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: craftique
+    app.kubernetes.io/managed-by: argocd
+    environment: production
+    owner: secdevops-team
+    project: craftique-482022
+    cost-center: education
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-balanced
+  replication-type: none
+  # Google-managed encryption at rest (AES-256)
+  fstype: ext4
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true

@@ -66,9 +66,15 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: postgres-data
+        labels:
+          app: postgres
+          app.kubernetes.io/name: postgres
+          app.kubernetes.io/component: database
+          encryption: enabled
       spec:
         accessModes: [ "ReadWriteOnce" ]
-        storageClassName: "standard-rwo"
+        # Use encrypted storage class
+        storageClassName: "pd-standard-encrypted"
         resources:
           requests:
             storage: 10Gi

@@ -3,10 +3,19 @@ kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
   namespace: default
+  labels:
+    app: postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+    encryption: enabled
+    environment: production
+    owner: secdevops-team
+    project: craftique-482022
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
-  storageClassName: standard-rwo # Standard GKE Persistent Disk
+  # Use encrypted storage class for data at rest protection
+  storageClassName: pd-standard-encrypted

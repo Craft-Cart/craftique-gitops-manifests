@@ -2,30 +2,16 @@
 
 This document describes every folder and file present in this repository and explains exactly what each manifest, YAML, or configuration does. Use this as a reference when auditing the repository, onboarding, or preparing a GitOps deployment with Argo CD.
 
-## 🔐 Secrets Management
-
-**This repository uses GCP Secret Manager with External Secrets Operator for secure secrets management.**
-
-📖 **Quick Start**: See [GCP-SECRETS-QUICKSTART.md](GCP-SECRETS-QUICKSTART.md) (5 minutes)  
-📚 **Full Guide**: See [GCP-SECRETS-SETUP.md](GCP-SECRETS-SETUP.md) (complete documentation)
-
-**Cost**: $0/month (within GCP free tier)
-
----
-
 Repository root
 - `LICENSE` — project license file.
-- `.gitignore` — Git ignore rules (includes GCP key exclusions).
+- `.gitignore` — Git ignore rules.
 - `README.md` — this file.
-- `GCP-SECRETS-QUICKSTART.md` — Quick 5-minute GCP Secret Manager setup guide.
-- `GCP-SECRETS-SETUP.md` — Complete GCP Secret Manager documentation.
 
 Top-level folders
 - `apps/` — Kubernetes manifests for the application services (frontend and backend).
 - `argocd/` — Argo CD Application definitions used to instruct Argo CD what to sync.
-- `infrastructure/` — infrastructure components (Postgres, External Secrets Operator).
+- `infrastructure/` — infrastructure components such as Postgres and Redis.
 - `networking/` — Ingress and NetworkPolicy resources.
-- `scripts/` — Automation scripts for setup.
 
 ------
 
@@ -90,14 +76,7 @@ Detailed file-by-file description
       - Data keys:
         - `POSTGRES_DB: craftique`
         - `POSTGRES_USER: craftique`
-      - **Security**: Non-sensitive values only. Sensitive credentials are managed via GCP Secret Manager.
-
-    - `postgres-externalsecret.yaml`
-      - Kind: `ExternalSecret` (external-secrets.io/v1beta1).
-      - Purpose: Syncs secrets from GCP Secret Manager into a Kubernetes Secret named `postgres-credentials`.
-      - Syncs three values: `POSTGRES_PASSWORD`, `POSTGRES_USER`, `POSTGRES_DB`.
-      - Refresh interval: 1 hour (checks GCP for updates).
-      - **Security**: Secrets never stored in Git, only synced from GCP at runtime.
+      - Note: Credentials are not stored here; however the StatefulSet currently uses a plaintext `POSTGRES_PASSWORD` environment variable (see below). Replace with ExternalSecrets or K8s Secret in production.
 
     - `postgres-pvc.yaml`
       - Kind: `PersistentVolumeClaim`.
@@ -113,24 +92,12 @@ Detailed file-by-file description
         - `serviceName: postgres-service` matches the headless Service.
         - `replicas: 1` (single instance) — not highly available by default.
         - Container image: `postgres:15-alpine`.
-        - `envFrom` reads values from `postgres-config` ConfigMap and `postgres-credentials` Secret (synced from GCP).
-        - **Security**: All credentials loaded from GCP Secret Manager via ExternalSecret.
+        - `envFrom` reads values from `postgres-config`, and currently `POSTGRES_PASSWORD` is hard-coded to `craftique_temp_password` (marked TODO to be replaced by ExternalSecrets).
         - Mounts a `volumeClaimTemplates` based PVC named `postgres-data` that requests `10Gi` (so each replica gets its own PVC).
         - Resource requests/limits are set to avoid resource exhaustion.
 
-  b) `infrastructure/external-secrets/`
-    - `external-secrets-operator.yaml`
-      - Kind: Multiple resources (Namespace, ServiceAccount, ClusterRole, ClusterRoleBinding, Deployment, CRDs).
-      - Purpose: Deploys the External Secrets Operator that syncs secrets from external providers (GCP Secret Manager) into Kubernetes Secrets.
-      - Image: `ghcr.io/external-secrets/external-secrets:v0.9.11`
-      - **Security**: Runs as non-root (UID 65534) with read-only root filesystem.
-      - Creates CRDs: `ExternalSecret`, `SecretStore`, `ClusterSecretStore`.
-
-    - `gcp-secretstore.yaml`
-      - Kind: `SecretStore` (external-secrets.io/v1beta1).
-      - Purpose: Configures connection to GCP Secret Manager.
-      - Requires: GCP project ID and service account credentials stored in Kubernetes Secret `gcp-secret-manager-key`.
-      - **Setup**: See [GCP-SECRETS-SETUP.md](GCP-SECRETS-SETUP.md) for configuration instructions.
+  b) `infrastructure/redis/`
+    - Folder currently empty. Placeholder for Redis manifests if cache or session storage is added later.
 
 4) `networking/`
   - `ingress.yaml`
@@ -149,20 +116,8 @@ Detailed file-by-file description
 
 ------
 
-Security Implementation Summary
-
-✅ **Secrets Management (Implemented)**
-- **Solution**: External Secrets Operator + GCP Secret Manager
-- **Status**: All database credentials synced from GCP (no plaintext in Git)
-- **Features**:
-  - Automatic secret rotation support (1-hour refresh interval)
-  - Audit logging via GCP Cloud Logging
-  - IAM-based access control
-  - Encrypted at rest and in transit
-- **Cost**: $0/month (within GCP free tier)
-- **Documentation**: [GCP-SECRETS-SETUP.md](GCP-SECRETS-SETUP.md)
-
 Security notes and TODOs (actionable)
+- Secrets: The repository contains temporary plaintext credentials in `postgres-statefulset.yaml` (`POSTGRES_PASSWORD`) and `backend-deployment.yaml` (`DATABASE_URL` query string). Replace these with a secrets manager integration (ExternalSecrets Operator + cloud secrets store or Kubernetes Secrets encrypted with SealedSecrets/Vault).
 - Images: Both `backend` and `frontend` images are placeholders (`craftique-backend:latest`, `craftique-frontend:latest`). Update manifests to point to immutable image digests (`myregistry/myimage@sha256:...`) from CI build artifacts.
 - High availability: Postgres is configured as a single replica. Consider adding a managed cloud DB or a highly-available Postgres operator for production.
 - TLS: `ingress.yaml` disables SSL redirect; add TLS secrets/certificate and enable HTTPS in production.

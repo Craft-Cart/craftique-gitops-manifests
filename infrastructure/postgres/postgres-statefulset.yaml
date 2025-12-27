@@ -66,11 +66,6 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: postgres-data
-        labels:
-          app: postgres
-          app.kubernetes.io/name: postgres
-          app.kubernetes.io/component: database
-          encryption: enabled
       spec:
         accessModes: [ "ReadWriteOnce" ]
         # standard-rwo provides encryption at rest by default (Google-managed keys)

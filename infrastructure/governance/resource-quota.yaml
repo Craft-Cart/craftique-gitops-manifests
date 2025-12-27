@@ -19,7 +19,7 @@ spec:
     requests.memory: "2Gi"
     limits.cpu: "4"
     limits.memory: "4Gi"
-    
+
     # Limit number of objects
     pods: "10"
     services: "5"

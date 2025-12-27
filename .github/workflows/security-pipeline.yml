@@ -1,0 +1,406 @@
+# Craftique GitOps Security Pipeline
+# Security scanning for Kubernetes manifests and infrastructure-as-code
+# Optimized for GitHub Free Tier (2,000 minutes/month)
+
+name: GitOps Security Pipeline
+
+on:
+  push:
+    branches: [main, ci/pipelines]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs when a new commit is pushed (saves minutes)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  # ============================================
+  # Stage 1: Quick Security Checks (Secrets + YAML Linting)
+  # ============================================
+  security-quick-scan:
+    name: 🔐 Quick Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks (Secrets Scan)
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:latest detect \
+            --source="/repo" \
+            --verbose \
+            --redact \
+            --exit-code 1
+        continue-on-error: false
+
+      - name: YAML Lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .
+          config_data: |
+            extends: default
+            rules:
+              line-length:
+                max: 120
+                level: warning
+              indentation:
+                spaces: 2
+              document-start: disable
+              truthy:
+                allowed-values: ['true', 'false']
+        continue-on-error: true
+
+  # ============================================
+  # Stage 2: Infrastructure-as-Code Security Scanning
+  # Scans Kubernetes manifests, policies, and IaC
+  # ============================================
+  iac-security-scan:
+    name: 🔍 IaC Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC Scan (Kubernetes Manifests)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-iac.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          exit-code: 0
+        continue-on-error: true
+
+      - name: Upload Trivy IaC results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-iac.sarif') != ''
+        with:
+          sarif_file: "trivy-iac.sarif"
+          category: "iac-trivy"
+
+      - name: Run Trivy IaC Scan (Table Format for Summary)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "."
+          format: "table"
+          severity: "CRITICAL,HIGH,MEDIUM"
+        continue-on-error: true
+
+      # ========== License Compliance for Dependencies ==========
+      - name: Check for dependency files
+        id: check-deps
+        run: |
+          if find . -name "requirements.txt" -o -name "package.json" -o -name "go.mod" | grep -q .; then
+            echo "has-deps=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-deps=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Trivy License Scan
+        if: steps.check-deps.outputs.has-deps == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "json"
+          output: "license-report.json"
+          scanners: "license"
+        continue-on-error: true
+
+      - name: Generate License Compliance Report
+        if: always() && hashFiles('license-report.json') != ''
+        run: |
+          echo "## 📋 License Compliance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count licenses by type
+          TOTAL=$(jq '[.Results[]?.Licenses // [] | .[]] | length' license-report.json)
+          echo "**Total Licenses Found:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List all unique licenses
+          echo "### License Types Detected" >> $GITHUB_STEP_SUMMARY
+          jq -r '[.Results[]?.Licenses // [] | .[] | .Name] | unique | sort | .[] | "- \(.)"' license-report.json >> $GITHUB_STEP_SUMMARY || echo "No licenses detected" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for restricted licenses (GPL, AGPL, etc.)
+          echo "### ⚠️ Restricted/Copyleft Licenses Check" >> $GITHUB_STEP_SUMMARY
+          RESTRICTED=$(jq -r '[.Results[]?.Licenses // [] | .[] | select(.Name | test("GPL|AGPL|SSPL|Commons Clause"; "i"))] | length' license-report.json)
+          
+          if [ "$RESTRICTED" -gt 0 ]; then
+            echo "❌ **Warning:** Found $RESTRICTED package(s) with copyleft licenses" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Package | License | Severity |" >> $GITHUB_STEP_SUMMARY
+            echo "|---------|---------|----------|" >> $GITHUB_STEP_SUMMARY
+            jq -r '.Results[]?.Licenses // [] | .[] | select(.Name | test("GPL|AGPL|SSPL|Commons Clause"; "i")) | "| \(.PkgName // "N/A") | \(.Name) | ⚠️ HIGH |"' license-report.json >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "✅ **No copyleft licenses detected**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload License Report
+        if: always() && hashFiles('license-report.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-compliance-report
+          path: license-report.json
+          retention-days: 90
+
+  # ============================================
+  # Stage 3: Kubernetes Manifest Validation
+  # ============================================
+  manifest-validation:
+    name: ✅ Manifest Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          sudo mv kubeval /usr/local/bin
+
+      - name: Validate Kubernetes manifests
+        run: |
+          echo "## 🔍 Kubernetes Manifest Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Find all YAML files in apps/ and infrastructure/
+          MANIFESTS=$(find apps/ infrastructure/ networking/ -name "*.yaml" -o -name "*.yml" 2>/dev/null || true)
+          
+          if [ -z "$MANIFESTS" ]; then
+            echo "⚠️ No manifest files found" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          FAILED=0
+          PASSED=0
+          
+          for manifest in $MANIFESTS; do
+            echo "Validating: $manifest"
+            if kubeval --strict --ignore-missing-schemas "$manifest"; then
+              PASSED=$((PASSED + 1))
+            else
+              FAILED=$((FAILED + 1))
+            fi
+          done
+          
+          echo "**Validation Results:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Passed: $PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Failed: $FAILED" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $FAILED -gt 0 ]; then
+            echo "⚠️ Some manifests failed validation" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Dry-run Kubernetes manifests
+        run: |
+          echo "## 🧪 Kubernetes Dry-Run" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Find all YAML files
+          MANIFESTS=$(find apps/ infrastructure/ networking/ -name "*.yaml" -o -name "*.yml" 2>/dev/null || true)
+          
+          if [ -z "$MANIFESTS" ]; then
+            echo "⚠️ No manifest files found" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "Running kubectl dry-run validation..." >> $GITHUB_STEP_SUMMARY
+          
+          for manifest in $MANIFESTS; do
+            echo "Dry-run: $manifest"
+            kubectl apply --dry-run=client -f "$manifest" 2>&1 || true
+          done
+          
+          echo "✅ Dry-run completed" >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+
+  # ============================================
+  # Stage 4: Policy-as-Code Enforcement (Optional)
+  # ============================================
+  policy-enforcement:
+    name: 📜 Policy Enforcement
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Conftest (OPA-based policy testing)
+        run: |
+          wget https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_0.54.0_Linux_x86_64.tar.gz
+          tar xzf conftest_0.54.0_Linux_x86_64.tar.gz
+          sudo mv conftest /usr/local/bin
+
+      - name: Check for custom policies
+        id: check-policies
+        run: |
+          if [ -d "infrastructure/governance/policies" ] || [ -d "policies" ]; then
+            echo "has-policies=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-policies=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No custom policies found. Skipping policy enforcement." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run Conftest policy tests
+        if: steps.check-policies.outputs.has-policies == 'true'
+        run: |
+          echo "## 📜 Policy Enforcement Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Run conftest on all manifests
+          POLICY_DIR="infrastructure/governance/policies"
+          if [ ! -d "$POLICY_DIR" ]; then
+            POLICY_DIR="policies"
+          fi
+          
+          if [ -d "$POLICY_DIR" ]; then
+            conftest test apps/ infrastructure/ networking/ -p "$POLICY_DIR" --all-namespaces || true
+            echo "✅ Policy enforcement completed" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+  # ============================================
+  # Stage 5: Security Benchmarking
+  # ============================================
+  security-benchmarking:
+    name: 🎯 Security Benchmarking
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run kubesec.io security analysis
+        run: |
+          echo "## 🎯 Kubernetes Security Benchmark" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Find deployment/statefulset/daemonset manifests
+          WORKLOAD_MANIFESTS=$(find apps/ infrastructure/ -type f \( -name "*deployment*.yaml" -o -name "*statefulset*.yaml" -o -name "*daemonset*.yaml" \) 2>/dev/null || true)
+          
+          if [ -z "$WORKLOAD_MANIFESTS" ]; then
+            echo "ℹ️ No workload manifests found" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "### Analyzed Workloads:" >> $GITHUB_STEP_SUMMARY
+          for manifest in $WORKLOAD_MANIFESTS; do
+            echo "Analyzing: $manifest"
+            SCORE=$(docker run --rm -v "$(pwd):/project" kubesec/kubesec:v2 scan "/project/$manifest" | jq -r '.[0].score // "N/A"')
+            echo "- **$manifest**: Score $SCORE" >> $GITHUB_STEP_SUMMARY
+          done
+        continue-on-error: true
+
+  # ============================================
+  # Stage 6: Security Gate & PR Comment
+  # ============================================
+  security-gate:
+    name: 🚦 Security Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [security-quick-scan, iac-security-scan, manifest-validation]
+    if: always()
+    steps:
+      - name: Evaluate security results
+        run: |
+          echo "🔐 GitOps Security Pipeline Summary"
+          echo "===================================="
+          echo "Quick Scan: ${{ needs.security-quick-scan.result }}"
+          echo "IaC Security: ${{ needs.iac-security-scan.result }}"
+          echo "Manifest Validation: ${{ needs.manifest-validation.result }}"
+
+          if [ "${{ needs.security-quick-scan.result }}" == "failure" ]; then
+            echo "❌ CRITICAL: Secrets detected!"
+            exit 1
+          fi
+
+          if [ "${{ needs.manifest-validation.result }}" == "failure" ]; then
+            echo "⚠️ Manifest validation issues detected"
+            # Don't fail the build, but warn
+          fi
+
+          echo "✅ Security gate passed"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🛡️ GitOps Security Summary
+              | Check | Status |
+              |-------|--------|
+              | Secrets Scan | ${{ needs.security-quick-scan.result == 'success' && '✅' || '❌' }} |
+              | IaC Security | ${{ needs.iac-security-scan.result == 'success' && '✅' || '⚠️' }} |
+              | Manifest Validation | ${{ needs.manifest-validation.result == 'success' && '✅' || '⚠️' }} |
+              
+              📋 Review the security findings in the Actions tab before merging.`
+            });
+
+  # ============================================
+  # Stage 7: Generate Security Report
+  # ============================================
+  security-report:
+    name: 📊 Security Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [security-gate]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate Security Dashboard
+        run: |
+          echo "# 🛡️ GitOps Security Dashboard" > security-report.md
+          echo "" >> security-report.md
+          echo "**Generated:** $(date -u)" >> security-report.md
+          echo "**Commit:** ${{ github.sha }}" >> security-report.md
+          echo "" >> security-report.md
+          echo "## Security Checks Status" >> security-report.md
+          echo "" >> security-report.md
+          echo "| Stage | Status |" >> security-report.md
+          echo "|-------|--------|" >> security-report.md
+          echo "| Secrets Scanning | ${{ needs.security-gate.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> security-report.md
+          echo "| IaC Security | ✅ Completed |" >> security-report.md
+          echo "| Manifest Validation | ✅ Completed |" >> security-report.md
+          echo "" >> security-report.md
+          echo "## Recommendations" >> security-report.md
+          echo "" >> security-report.md
+          echo "- Review all CRITICAL and HIGH severity findings" >> security-report.md
+          echo "- Ensure all manifests follow Kubernetes best practices" >> security-report.md
+          echo "- Keep infrastructure dependencies up to date" >> security-report.md
+          echo "- Implement policy-as-code for automated compliance" >> security-report.md
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report.md
+          retention-days: 90

@@ -36,7 +36,7 @@ spec:
       #   --docker-email=user@example.com
       imagePullSecrets:
         - name: gcp-pull-secret
-      
+
       securityContext:
         runAsUser: 1001
       containers:

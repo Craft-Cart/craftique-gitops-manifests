@@ -14,7 +14,7 @@ metadata:
     project: phd-craftique
     cost-center: education
 spec:
-  
+
   replicas: 2
   selector:
     matchLabels:
@@ -42,14 +42,14 @@ spec:
         runAsUser: 1001
         runAsGroup: 1001
         fsGroup: 1001
-      
+
       containers:
         - name: backend
           # GCP Artifact Registry image path
           # Format: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/IMAGE:TAG
           # Update ARTIFACT_REPO_NAME with your actual repository name from GCP
           image: europe-west10-docker.pkg.dev/craftique-482022/craftique-registry/backend:latest
-          imagePullPolicy: Always 
+          imagePullPolicy: Always
           # Container-level security context
           securityContext:
             readOnlyRootFilesystem: true

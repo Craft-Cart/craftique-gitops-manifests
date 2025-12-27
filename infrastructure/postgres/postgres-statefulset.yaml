@@ -69,7 +69,7 @@ spec:
     - metadata:
         name: postgres-data
       spec:
-        accessModes: [ "ReadWriteOnce" ]
+        accessModes: ["ReadWriteOnce"]
         # standard-rwo provides encryption at rest by default (Google-managed keys)
         storageClassName: "standard-rwo"
         resources:

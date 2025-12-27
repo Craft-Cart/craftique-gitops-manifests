@@ -28,7 +28,7 @@ spec:
       min:
         cpu: "10m"
         memory: "64Mi"
-    
+
     # Limits for pods
     - type: Pod
       max:

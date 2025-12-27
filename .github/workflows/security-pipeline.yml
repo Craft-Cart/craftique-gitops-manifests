@@ -250,9 +250,11 @@ jobs:
 
       - name: Setup Conftest (OPA-based policy testing)
         run: |
-          wget https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_0.54.0_Linux_x86_64.tar.gz
-          tar xzf conftest_0.54.0_Linux_x86_64.tar.gz
+          CONFTEST_VERSION="0.58.0"
+          wget "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
+          tar xzf "conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
           sudo mv conftest /usr/local/bin
+          conftest --version
 
       - name: Check for custom policies
         id: check-policies
@@ -371,7 +373,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [security-gate]
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

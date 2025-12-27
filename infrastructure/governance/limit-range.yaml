@@ -26,7 +26,7 @@ spec:
         cpu: "1"
         memory: "1Gi"
       min:
-        cpu: "50m"
+        cpu: "10m"
         memory: "64Mi"
     
     # Limits for pods

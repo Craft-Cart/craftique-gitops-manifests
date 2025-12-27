@@ -14,14 +14,17 @@ spec:
       labels:
         app: postgres
     spec:
+      # Pod-level security context - ensure postgres user (70) can access volumes
+      securityContext:
+        fsGroup: 70
+        runAsUser: 70
+        runAsGroup: 70
       containers:
         - name: postgres
           image: postgres:15-alpine
           # Container-level security context
           securityContext:
             allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            runAsUser: 999
             capabilities:
               drop:
                 - ALL

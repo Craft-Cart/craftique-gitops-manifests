@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/component: api
     app.kubernetes.io/part-of: craftique
     app.kubernetes.io/managed-by: argocd
-    environment: development
+    environment: production
     owner: secdevops-team
     project: phd-craftique
     cost-center: education
@@ -26,7 +26,7 @@ spec:
         app.kubernetes.io/name: backend
         app.kubernetes.io/component: api
         app.kubernetes.io/part-of: craftique
-        environment: development
+        environment: production
         owner: secdevops-team
     spec:
       # Image pull secret for GCP Artifact Registry authentication

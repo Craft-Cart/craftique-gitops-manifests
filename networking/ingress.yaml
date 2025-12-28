@@ -30,13 +30,31 @@ spec:
     - host: craftique.chickenkiller.com
       http:
         paths:
-          - path: /api
+          # Backend API routes - must come before /api/auth to avoid conflicts
+          - path: /api/v1
             pathType: Prefix
             backend:
               service:
                 name: backend-service
                 port:
                   number: 8000
+          # Frontend API routes (Next.js API routes like /api/auth/callback)
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 3000
+          # All other /api routes go to frontend (Next.js API routes)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 3000
+          # Default route to frontend
           - path: /
             pathType: Prefix
             backend:

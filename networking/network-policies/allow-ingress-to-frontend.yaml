@@ -19,7 +19,17 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # Allow from ingress controller (typically in ingress-nginx namespace)
+    # Allow from ingress controller (match by pod labels, works across namespaces)
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/component: controller
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Also allow from ingress controller by namespace name (fallback)
     - from:
         - namespaceSelector:
             matchLabels:

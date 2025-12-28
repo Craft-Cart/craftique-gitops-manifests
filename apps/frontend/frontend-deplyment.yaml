@@ -68,8 +68,6 @@ spec:
             # NEXT_PUBLIC_API_BASE_URL is used for client-side - external domain
             - name: NEXT_PUBLIC_API_BASE_URL
               value: "https://craftique.chickenkiller.com/api/v1"
-            - name: APP_BASE_URL
-              value: "https://craftique.chickenkiller.com"
             # Auth0 credentials from Secret
             - name: AUTH0_DOMAIN
               valueFrom:

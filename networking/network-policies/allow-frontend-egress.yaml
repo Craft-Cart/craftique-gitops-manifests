@@ -32,6 +32,16 @@ spec:
         - podSelector:
             matchLabels:
               app: craftique-backend
+    # Allow HTTPS to external services (Auth0, Google, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow HTTP to external services (for redirects)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0

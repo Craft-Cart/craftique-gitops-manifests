@@ -4,7 +4,7 @@ metadata:
   name: backend-config
   namespace: default
 data:
-  NODE_ENV: production
+  NODE_ENV: development
   API_BASE_URL: https://craftique.chickenkiller.com/api/v1
   BCRYPT_ROUNDS: "12"
   RATE_LIMIT_WINDOW_MS: "900000"

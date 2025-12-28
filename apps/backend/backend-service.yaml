@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/component: api
     app.kubernetes.io/part-of: craftique
     app.kubernetes.io/managed-by: argocd
-    environment: production
+    environment: development
     owner: secdevops-team
     project: phd-craftique
     cost-center: education

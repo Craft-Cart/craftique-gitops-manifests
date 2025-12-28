@@ -35,6 +35,13 @@ spec:
     - host: craftique.chickenkiller.com
       http:
         paths:
+          - path: /api/auth/sync
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 3000
           - path: /api
             pathType: Prefix
             backend:

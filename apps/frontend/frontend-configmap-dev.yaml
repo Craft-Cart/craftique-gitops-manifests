@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     app: craftique-frontend
-    environment: development
+    environment: production
 data:
   API_BASE_URL: "http://backend-service:8000/api/v1"
   NEXT_PUBLIC_API_BASE_URL: "http://dev.craftique.local/api/v1"

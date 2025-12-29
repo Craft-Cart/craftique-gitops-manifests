@@ -3,20 +3,16 @@ kind: Service
 metadata:
   name: postgres-service
   namespace: default
+  # VIOLATION: Removing mandatory asset tagging/governance labels
+  # Missing: craftique.io/owner, craftique.io/environment, craftique.io/cost-center
   labels:
     app: postgres
-    app.kubernetes.io/name: postgres
-    app.kubernetes.io/component: database
-    app.kubernetes.io/part-of: craftique
-    app.kubernetes.io/managed-by: argocd
-    environment: production
-    owner: secdevops-team
-    project: phd-craftique
-    cost-center: education
 spec:
   ports:
     - port: 5432
       targetPort: 5432
   selector:
     app: postgres
-  clusterIP: None # Headless service for StatefulSet
+  # VIOLATION: Changing ClusterIP: None to LoadBalancer 
+  # This exposes a private database to the public internet, violating "Least-Privilege" design
+  type: LoadBalancer
